@@ -91,6 +91,7 @@ class DataObject:
             self.depth_data.total.bower_index = da.returnVolumeSummary(self.depth_data.total.bower_locations,
                                                 self.depth_data.total.height_change).BowerIndex
 
+            self.pickle_data(dtype='depth')
 
     def prep_cluster_data(self):
 
@@ -151,11 +152,19 @@ class DataObject:
                                                   self.cluster_data.total.kdes.p,
                                                   self.cluster_data.total.kdes.c).BowerIndex
 
-    def pickle_data(self):
-        with open(self.fm.get_local_path(self.pid, 'data_cache', 'cluster_data.pkl'), 'wb') as f:
-            pickle.dump(self.cluster_data, f)
-        with open(self.fm.get_local_path(self.pid, 'data_cache', 'depth_data.pkl'), 'wb' as f):
-            pickle.dump(self.depth_data, f)
+            self.pickle_data(dtype='cluster')
+
+    def pickle_data(self, dtype):
+        if dtype == 'cluster':
+            cluster_pickle = self.fm.get_local_path(self.pid, 'data_cache', 'cluster_data.pkl')
+            with open(cluster_pickle, 'wb') as f:
+                pickle.dump(self.cluster_data, f)
+            return 0 if os.path.exists(cluster_pickle) else 1
+        elif dtype == 'depth':
+            depth_pickle = self.fm.get_local_path(self.pid, 'data_cache', 'depth_data.pkl')
+            with open(depth_pickle, 'wb') as f:
+                pickle.dump(self.depth_data, f)
+            return 0 if os.path.exists(depth_pickle) else 1
 
     def generate_legacy_filemanager(self):
         pfm = SimpleNamespace()

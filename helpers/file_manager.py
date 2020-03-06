@@ -43,8 +43,9 @@ class FileManager:
     def add_project(self, pid):
         self.pids.append(pid)
         self.construct_filesystem(pid)
-        if ~os.path.exists(self.get_local_path(pid, 'data_cache')):
+        if not os.path.exists(self.get_local_path(pid, 'data_cache')):
             self.download_required_files(pid)
+            os.makedirs(self.get_local_path(pid, 'data_cache'))
 
     def construct_filesystem(self, pid):
         for sub_dir in ['Figures', 'MasterAnalysisFiles']:
