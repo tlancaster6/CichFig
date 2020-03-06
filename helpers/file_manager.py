@@ -40,12 +40,13 @@ class FileManager:
         exists = subprocess.run(cmnd, capture_output=True, encoding='utf-8').stdout != ''
         return exists
 
-    def add_project(self, pid):
-        self.pids.append(pid)
-        self.construct_filesystem(pid)
-        if not os.path.exists(self.get_local_path(pid, 'data_cache')):
-            self.download_required_files(pid)
-            os.makedirs(self.get_local_path(pid, 'data_cache'))
+    def add_projects(self, *pids):
+        for pid in pids:
+            self.pids.append(pid)
+            self.construct_filesystem(pid)
+            if not os.path.exists(self.get_local_path(pid, 'data_cache')):
+                self.download_required_files(pid)
+                os.makedirs(self.get_local_path(pid, 'data_cache'))
 
     def construct_filesystem(self, pid):
         for sub_dir in ['Figures', 'MasterAnalysisFiles']:
@@ -84,6 +85,13 @@ class FileManager:
         with open(local_path, 'w') as f:
             for pid, date in self.log.items():
                 f.write('{}, {}\n'.format(pid, date))
+
+    def add_to_uploads(self, path):
+        if self.get_local_path() in path:
+            path = path.replace(self.get_local_path(), '').strip('/')
+        if self.get_cloud_path() in path:
+            path = path.replace(self.get_cloud_path(), '').strip('/')
+        self.uploads.append(path)
 
     def upload_results(self):
         for upload in self.uploads:
