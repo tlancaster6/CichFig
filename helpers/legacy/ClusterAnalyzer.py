@@ -96,7 +96,7 @@ class ClusterAnalyzer:
             z = (z * n_events) / (z.sum() * (self.projFileManager.pixelLength ** 2))
         return z
 
-    def returnBowerLocations(self, t0, t1, cropped=False, bandwidth=None):
+    def returnBowerLocations(self, t0, t1, cropped=False, bandwidth=None, scoopKde=None, spitKde=None):
 
         self._checkTimes(t0, t1)
         timeChange = t1 - t0
@@ -111,13 +111,15 @@ class ClusterAnalyzer:
             totalThreshold = self.projFileManager.totalClusterThreshold
             minPixels = self.projFileManager.totalMinPixels
 
-        z_scoop = self.returnClusterKDE(t0, t1, 'c', cropped=cropped, bandwidth=bandwidth)
-        z_spit = self.returnClusterKDE(t0, t1, 'p', cropped=cropped, bandwidth=bandwidth)
+        if scoopKde is None:
+            scoopKde = self.returnClusterKDE(t0, t1, 'c', cropped=cropped, bandwidth=bandwidth)
+        if spitKde is None:
+            spitKde = self.returnClusterKDE(t0, t1, 'p', cropped=cropped, bandwidth=bandwidth)
 
-        scoop_binary = np.where(z_spit - z_scoop <= -1 * totalThreshold, True, False)
+        scoop_binary = np.where(spitKde - scoopKde <= -1 * totalThreshold, True, False)
         scoop_binary = morphology.remove_small_objects(scoop_binary, minPixels).astype(int)
 
-        spit_binary = np.where(z_spit - z_scoop >= totalThreshold, True, False)
+        spit_binary = np.where(spitKde - scoopKde >= totalThreshold, True, False)
         spit_binary = morphology.remove_small_objects(spit_binary, minPixels).astype(int)
 
         bowers = spit_binary - scoop_binary

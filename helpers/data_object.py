@@ -5,7 +5,7 @@ from helpers.legacy.LogParser import LogParser as LP
 from types import SimpleNamespace
 import pandas as pd
 import numpy as np
-import os
+import os, pickle
 
 
 class DataObject:
@@ -56,8 +56,8 @@ class DataObject:
 
     def prep_depth_data(self):
 
-        if os.path.exists(self.fm.get_local_path(self.pid, 'data_cache')):
-            pass
+        if os.path.exists(self.fm.get_local_path(self.pid, 'data_cache', 'depth_data.pkl')):
+            self.depth_data = pickle.load(self.fm.get_local_path(self.pid, 'data_cache', 'depth_data.pkl'))
         else:
             self.depth_data.hourly = SimpleNamespace()
             self.depth_data.daily = SimpleNamespace()
@@ -93,18 +93,19 @@ class DataObject:
 
 
     def prep_cluster_data(self):
-        self.cluster_data.hourly = SimpleNamespace()
-        self.cluster_data.daily = SimpleNamespace()
-        self.cluster_data.total = SimpleNamespace()
 
-        splits = self.determine_splits()
-        self.cluster_data.hourly.splits = splits[0]
-        self.cluster_data.daily.splits = splits[1]
-        self.cluster_data.total.splits = splits[2]
-
-        if os.path.exists(self.fm.get_local_path(self.pid, 'data_cache')):
-            pass
+        if os.path.exists(self.fm.get_local_path(self.pid, 'data_cache', 'cluster_data.pkl')):
+            self.cluster_data = pickle.load(self.fm.get_local_path(self.pid, 'data_cache', 'cluster_data.pkl'))
         else:
+            self.cluster_data.hourly = SimpleNamespace()
+            self.cluster_data.daily = SimpleNamespace()
+            self.cluster_data.total = SimpleNamespace()
+
+            splits = self.determine_splits()
+            self.cluster_data.hourly.splits = splits[0]
+            self.cluster_data.daily.splits = splits[1]
+            self.cluster_data.total.splits = splits[2]
+
             self.cluster_data.hourly = SimpleNamespace()
             self.cluster_data.daily = SimpleNamespace()
             self.cluster_data.total = SimpleNamespace()
@@ -120,26 +121,41 @@ class DataObject:
             self.cluster_data.daily.kdes = SimpleNamespace()
             self.cluster_data.total.kdes = SimpleNamespace()
 
-            self.cluster_data.hourly.height_change = np.stack(
-                [ca.returnClusterKDE(t0, t1, cropped=True) for t0, t1 in splits[0]])
-            self.cluster_data.daily.height_change = np.stack(
-                [ca.returnClusterKDE(t0, t1, cropped=True) for t0, t1 in splits[1]])
-            self.cluster_data.total.height_change = ca.returnClusterKDE(splits[2][0], splits[2][1], cropped=True)
+            for bid in ca.bids:
+                self.cluster_data.hourly.kdes.__dict__.update(
+                    {bid: np.stack([ca.returnClusterKDE(t0, t1, bid, cropped=True) for t0, t1 in splits[0]])})
+                self.cluster_data.daily.kdes.__dict__.update(
+                    {bid: np.stack([ca.returnClusterKDE(t0, t1, bid, cropped=True) for t0, t1 in splits[1]])})
+                self.cluster_data.total.kdes.__dict__.update(
+                    {bid: ca.returnClusterKDE(splits[2][0], splits[2][1], bid, cropped=True)})
 
             self.cluster_data.hourly.bower_locations = np.stack(
-                [ca.returnBowerLocations(t0, t1, cropped=True) for t0, t1 in splits[0]])
+                [ca.returnBowerLocations(t0, t1, cropped=True, scoopKde=self.cluster_data.hourly.kdes.c[i],
+                 spitKde=self.cluster_data.hourly.kdes.p[i]) for i, (t0, t1) in enumerate(splits[0])])
             self.cluster_data.daily.bower_locations = np.stack(
-                [ca.returnBowerLocations(t0, t1, cropped=True) for t0, t1 in splits[1]])
-            self.cluster_data.total.bower_locations = ca.returnBowerLocations(splits[2][0], splits[2][1], cropped=True)
+                [ca.returnBowerLocations(t0, t1, cropped=True, scoopKde=self.cluster_data.daily.kdes.c[i],
+                 spitKde=self.cluster_data.daily.kdes.p[i]) for i, (t0, t1) in enumerate(splits[1])])
+            self.cluster_data.total.bower_locations = ca.returnBowerLocations(
+                splits[2][0], splits[2][1], cropped=True, scoopKde=self.cluster_data.total.kdes.c,
+                spitKde=self.cluster_data.total.kdes.p)
 
             self.cluster_data.hourly.bower_index = [ca.returnClusterSummary(self.cluster_data.hourly.bower_locations[i],
-                                                  self.cluster_data.hourly.height_change[i]).BowerIndex
-                                                  for i in self.cluster_data.hourly.bower_locations.shape[0]]
+                                                    self.cluster_data.hourly.kdes.p[i],
+                                                    self.cluster_data.hourly.kdes.c[i]).BowerIndex for i in
+                                                    range(self.cluster_data.hourly.bower_locations.shape[0])]
             self.cluster_data.daily.bower_index = [ca.returnClusterSummary(self.cluster_data.daily.bower_locations[i],
-                                                 self.cluster_data.daily.height_change[i]).BowerIndex
-                                                 for i in self.cluster_data.daily.bower_locations.shape[0]]
+                                                   self.cluster_data.daily.kdes.p[i],
+                                                   self.cluster_data.daily.kdes.c[i]).BowerIndex for i in
+                                                   range(self.cluster_data.daily.bower_locations.shape[0])]
             self.cluster_data.total.bower_index = ca.returnClusterSummary(self.cluster_data.total.bower_locations,
-                                                self.cluster_data.total.height_change).BowerIndex
+                                                  self.cluster_data.total.kdes.p,
+                                                  self.cluster_data.total.kdes.c).BowerIndex
+
+    def pickle_data(self):
+        with open(self.fm.get_local_path(self.pid, 'data_cache', 'cluster_data.pkl'), 'wb') as f:
+            pickle.dump(self.cluster_data, f)
+        with open(self.fm.get_local_path(self.pid, 'data_cache', 'depth_data.pkl'), 'wb' as f):
+            pickle.dump(self.depth_data, f)
 
     def generate_legacy_filemanager(self):
         pfm = SimpleNamespace()
