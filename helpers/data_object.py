@@ -15,22 +15,19 @@ class DataObject:
         self.fm = file_manager
         self.depth_data = SimpleNamespace()
         self.cluster_data = SimpleNamespace()
-        pass
 
     def load_data(self):
-        if os.path.exists(self.fm.get_local_path(self.pid, 'data_cache', 'cluster_data.pkl')):
-            print('unpickling cluster data')
-            self.unpickle_data('cluster')
-        else:
-            print('no pkl file found. running cluster data prep')
-            self.prep_cluster_data()
-
         if os.path.exists(self.fm.get_local_path(self.pid, 'data_cache', 'depth_data.pkl')):
-            print('unpickling depth data')
             self.unpickle_data('depth')
         else:
             print('no pkl file found. running depth data prep')
             self.prep_depth_data()
+
+        if os.path.exists(self.fm.get_local_path(self.pid, 'data_cache', 'cluster_data.pkl')):
+            self.unpickle_data('cluster')
+        else:
+            print('no pkl file found. running cluster data prep')
+            self.prep_cluster_data()
 
     def prep_data(self):
         if os.path.exists(self.fm.get_local_path(self.pid, 'data_cache', 'cluster_data.pkl')):
@@ -80,13 +77,13 @@ class DataObject:
         self.depth_data.total.bower_locations = da.returnBowerLocations(splits[2][0], splits[2][1], cropped=True)
 
         self.depth_data.hourly.bower_index = [da.returnVolumeSummary(self.depth_data.hourly.bower_locations[i],
-                                              self.depth_data.hourly.height_change[i]).BowerIndex
-                                              for i in self.depth_data.hourly.bower_locations.shape[0]]
+                                              self.depth_data.hourly.height_change[i]).bowerIndex
+                                              for i in range(self.depth_data.hourly.bower_locations.shape[0])]
         self.depth_data.daily.bower_index = [da.returnVolumeSummary(self.depth_data.daily.bower_locations[i],
-                                             self.depth_data.daily.height_change[i]).BowerIndex
-                                             for i in self.depth_data.daily.bower_locations.shape[0]]
+                                             self.depth_data.daily.height_change[i]).bowerIndex
+                                             for i in range(self.depth_data.daily.bower_locations.shape[0])]
         self.depth_data.total.bower_index = da.returnVolumeSummary(self.depth_data.total.bower_locations,
-                                            self.depth_data.total.height_change).BowerIndex
+                                            self.depth_data.total.height_change).bowerIndex
 
         self.pickle_data(dtype='depth')
 
@@ -138,20 +135,20 @@ class DataObject:
 
         self.cluster_data.hourly.bower_index = [ca.returnClusterSummary(self.cluster_data.hourly.bower_locations[i],
                                                 self.cluster_data.hourly.kdes.p[i],
-                                                self.cluster_data.hourly.kdes.c[i]).BowerIndex for i in
+                                                self.cluster_data.hourly.kdes.c[i]).bowerIndex for i in
                                                 range(self.cluster_data.hourly.bower_locations.shape[0])]
         self.cluster_data.daily.bower_index = [ca.returnClusterSummary(self.cluster_data.daily.bower_locations[i],
                                                self.cluster_data.daily.kdes.p[i],
-                                               self.cluster_data.daily.kdes.c[i]).BowerIndex for i in
+                                               self.cluster_data.daily.kdes.c[i]).bowerIndex for i in
                                                range(self.cluster_data.daily.bower_locations.shape[0])]
         self.cluster_data.total.bower_index = ca.returnClusterSummary(self.cluster_data.total.bower_locations,
                                               self.cluster_data.total.kdes.p,
-                                              self.cluster_data.total.kdes.c).BowerIndex
+                                              self.cluster_data.total.kdes.c).bowerIndex
 
         self.pickle_data(dtype='cluster')
 
     def determine_splits(self):
-        lp = LP(self.generate_legacy_filemanager().localLogFile)
+        lp = LP(self.generate_legacy_filemanager().localLogfile)
 
         total_start = pd.Timestamp(max(lp.movies[0].startTime, lp.frames[0].time)).ceil('H')
         total_stop = pd.Timestamp(min(lp.movies[-1].endTime, lp.frames[-1].time)).floor('H')
@@ -196,13 +193,13 @@ class DataObject:
                 self.cluster_data = pickle.load(f)
         elif dtype == 'depth':
             depth_pickle = self.fm.get_local_path(self.pid, 'data_cache', 'depth_data.pkl')
-            with open(depth_pickle, 'wrb') as f:
+            with open(depth_pickle, 'rb') as f:
                 self.depth_data = pickle.load(f)
 
     def generate_legacy_filemanager(self):
         pfm = SimpleNamespace()
 
-        pfm.localLogFile = self.fm.get_local_path(self.pid, 'Logfile.txt')
+        pfm.localLogfile = self.fm.get_local_path(self.pid, 'Logfile.txt')
         pfm.localTransMFile = self.fm.get_local_path(self.pid, 'MasterAnalysisFiles/TransMFile.npy')
         pfm.localAllLabeledClustersFile = self.fm.get_local_path(self.pid, 'MasterAnalysisFiles/AllLabeledClusters.csv')
         pfm.localTrayFile = self.fm.get_local_path(self.pid, 'MasterAnalysisFiles/DepthCrop.txt')

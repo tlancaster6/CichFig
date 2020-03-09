@@ -51,7 +51,8 @@ class FileManager:
     def construct_filesystem(self, pid):
         for sub_dir in ['Figures', 'MasterAnalysisFiles']:
             path = self.get_local_path(pid, sub_dir)
-            os.makedirs(path)
+            if not os.path.exists(path):
+                os.makedirs(path)
 
     def download_file(self, relative_path):
         source = self.get_cloud_path(relative_path)

@@ -9,7 +9,6 @@ class CichFig:
         self.pids = []
         self.fm = FileManager()
         self.dh = DataHandler(self.fm)
-        self.plt = Plotter(self.dh, self.fm)
 
     def identify_projects(self):
         projects = self.fm.identify_projects()
@@ -22,12 +21,13 @@ class CichFig:
             self.pids.append(pid)
             self.fm.add_projects(pid)
             self.dh.add_projects(pid)
-        self.plt = Plotter(self.dh, self.fm)
 
-    def full_auto(self):
-        pass
-
-
+    def plot_all(self):
+        for pid in self.pids:
+            self.dh.load_projects(pid)
+            plotter = Plotter(self.dh.data_objects[pid], self.fm)
+            plotter.plot_all()
+            self.dh.unload_projects(pid)
 
 
 
