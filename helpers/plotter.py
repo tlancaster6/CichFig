@@ -104,6 +104,7 @@ class Plotter:
         pass
 
     def plot_daily_bower_overlap(self):
+        pass
 
     def plot_daily_indices(self, start_row=0, fig=None):
         #requires 3 rows
