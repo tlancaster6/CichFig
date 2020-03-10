@@ -165,8 +165,10 @@ class DataObject:
 
         hourly_splits = hourly_splits.to_pydatetime().tolist()
         hourly_splits = list(zip(hourly_splits[:-1], hourly_splits[1:]))
+        hourly_splits = [split for split in hourly_splits if split[0].hour != 18]
+
         daily_splits = daily_splits.to_pydatetime().tolist()
-        daily_splits = list(zip(daily_splits[:-1], daily_splits[1:]))
+        daily_splits = list(zip(daily_splits[:-1:2], daily_splits[1::2]))
 
         return hourly_splits, daily_splits, total_splits
 
