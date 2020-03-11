@@ -27,8 +27,6 @@ class CichFig:
             self.dh.load_projects(pid)
             plotter = Plotter(self.dh.data_objects[pid], self.fm)
             plotter.plot_all()
-            plotter.plot_daily_heights()
-            plotter.plot_daily_kdes()
             self.dh.unload_projects(pid)
 
 

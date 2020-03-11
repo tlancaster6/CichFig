@@ -1,0 +1,18 @@
+plotter_method,w,h,c,title,fname
+daily_bower_overlap,0,2,1,Daily Bower Overlaps,Figures/daily_bower_overlap.pdf
+daily_cluster_bowers,0,2,1,Daily Behavioral Density Bowers,Figures/daily_cluster_bowers.pdf
+daily_height_bowers,0,2,1,Daily Height Change Bowers,Figures/daily_height_bowers.pdf
+daily_heights,0,2,1,Daily Height Changes,Figures/daily_heights.pdf
+daily_indices,0,3,1,Daily Bower Indices,Figures/daily_indices.pdf
+daily_kdes,0,11,1,Daily Behavioral Densities,Figures/daily_kdes.pdf
+daily_spit_scoop_difference,0,2,1,Daily Spit Density Minus Scoop Density,Figures/daily_spit_scoop_difference.pdf
+hourly_heights,0,11,1,Hourly Height Changes,Figures/hourly_heights.pdf
+hourly_spit_scoop_difference,0,11,1,Hourly Spit Density Minus Scoop Density,Figures/hourly_spit_scoop_difference.pdf
+total_kdes,0,41,1,Whole Trial Behavioral Densities,Figures/total_kdes.pdf
+total_heights,0,5,1,Whole Trial Height Change,Figures/total_heights.pdf
+total_correlations,0,5,1,Whole Trial Spatial Correlation,Figures/total_correlations.pdf
+total_spit_scoop_difference,0,5,1,Whole Trial Spit Density Minus Scoop Density,Figures/total_spit_scoop_difference.pdf
+total_cluster_bowers,0,5,1,Whole Trial Behavioral Density Bower,Figures/total_cluster_bowers.pdf
+total_height_bowers,0,5,1,Whole Trial Height Change Bower,Figures/total_height_bowers.pdf
+total_bower_overlap,0,5,1,Whole Trial Bower Overlap,Figures/total_bower_overlap.pdf
+plot_all,0,0,1,,Figures/plot_all.pdf
