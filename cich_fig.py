@@ -11,6 +11,7 @@ class CichFig:
         self.dh = DataHandler(self.fm)
 
     def identify_projects(self):
+        print('identifying projects ready for figure creation. This might take a while')
         projects = self.fm.identify_projects()
         print('projects with the files required for figure creation:')
         print('\n'.join(projects))

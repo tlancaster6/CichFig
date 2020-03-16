@@ -1,6 +1,6 @@
 from cich_fig import CichFig as CF
 
 cf = CF()
-ready = cf.identify_projects()
-# cf.add_projects('MC6_5')
-# cf.plot_all()
+cf.add_projects('_newtray_MCxCVF2_7_2')
+cf.plot_all()
+
