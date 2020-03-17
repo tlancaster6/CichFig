@@ -5,5 +5,5 @@ setup(name='CichFig',
       description='standalone plotting suite for the cichlid bower project',
       author='Tucker Lancaster',
       author_email='tuckerlancaster@gmail.com',
-      packages=['seaborn', 'scikit-image', 'scikit-learn']
+      requires=['seaborn', 'scikit-image', 'scikit-learn', 'matplotlib', 'numpy', 'pandas', 'scipy']
       )

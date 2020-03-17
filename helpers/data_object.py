@@ -1,7 +1,8 @@
-from helpers.file_manager import FileManager
+from helpers.legacy.FileManager import FileManager
 from helpers.legacy.DepthAnalyzer import DepthAnalyzer as DA
 from helpers.legacy.ClusterAnalyzer import ClusterAnalyzer as CA
 from helpers.legacy.LogParser import LogParser as LP
+from helpers.legacy.HMMAnalyzer import HMMAnalyzer as HA
 from types import SimpleNamespace
 import pandas as pd
 import numpy as np
@@ -10,48 +11,43 @@ import os, pickle
 
 class DataObject:
 
-    def __init__(self, pid, file_manager):
+    def __init__(self, pid):
         self.pid = pid
-        self.fm = file_manager
+        self.fm = FileManager(self.pid)
         self.depth_data = SimpleNamespace()
         self.cluster_data = SimpleNamespace()
 
     def load_data(self):
-        if os.path.exists(self.fm.get_local_path(self.pid, 'data_cache', 'depth_data.pkl')):
+        if os.path.exists(self.fm.localDepthPickle):
             self.unpickle_data('depth')
         else:
             print('no pkl file found. running depth data prep')
             self.prep_depth_data()
 
-        if os.path.exists(self.fm.get_local_path(self.pid, 'data_cache', 'cluster_data.pkl')):
+        if os.path.exists(self.fm.localClusterPickle):
             self.unpickle_data('cluster')
         else:
             print('no pkl file found. running cluster data prep')
             self.prep_cluster_data()
 
     def prep_data(self):
-        if os.path.exists(self.fm.get_local_path(self.pid, 'data_cache', 'cluster_data.pkl')):
+        if os.path.exists(self.fm.localClusterPickle):
             print('cluster data already prepped. delete cluster_data.pkl to forcibly re-prep')
         else:
             print('running cluster data prep')
             self.prep_cluster_data()
 
-        if os.path.exists(self.fm.get_local_path(self.pid, 'data_cache', 'depth_data.pkl')):
+        if os.path.exists(self.fm.localDepthPickle):
             print('depth data already prepped. delete depth_data.pkl to forcibly re-prep')
         else:
             print('running depth data prep')
             self.prep_depth_data()
 
-    def validate_data(self):
-        # asserts that all files required for data prep are present
-        data_dir = self.fm.get_local_path(self.pid)
-        required = [os.path.join(data_dir, req) for req in self.fm.required_files()]
-        valid = all(os.path.exists(path) for path in required)
-        assert valid is True
+    def prep_hmm_data(self):
+        lp = LP(self.fm.localLogfile)
+
 
     def prep_depth_data(self):
-
-        self.validate_data()
 
         self.depth_data.hourly = SimpleNamespace()
         self.depth_data.daily = SimpleNamespace()
@@ -62,7 +58,7 @@ class DataObject:
         self.depth_data.daily.splits = splits[1]
         self.depth_data.total.splits = splits[2]
 
-        da = DA(self.generate_legacy_filemanager())
+        da = DA(self.fm)
 
         self.depth_data.hourly.height_change = np.stack(
             [da.returnHeightChange(t0, t1, cropped=True) for t0, t1 in splits[0]])
@@ -89,8 +85,6 @@ class DataObject:
 
     def prep_cluster_data(self):
 
-        self.validate_data()
-
         self.cluster_data.hourly = SimpleNamespace()
         self.cluster_data.daily = SimpleNamespace()
         self.cluster_data.total = SimpleNamespace()
@@ -109,7 +103,7 @@ class DataObject:
         self.cluster_data.daily.splits = splits[1]
         self.cluster_data.total.splits = splits[2]
 
-        ca = CA(self.generate_legacy_filemanager())
+        ca = CA(self.fm)
 
         self.cluster_data.hourly.kdes = SimpleNamespace()
         self.cluster_data.daily.kdes = SimpleNamespace()
@@ -148,7 +142,7 @@ class DataObject:
         self.pickle_data(dtype='cluster')
 
     def determine_splits(self):
-        lp = LP(self.generate_legacy_filemanager().localLogfile)
+        lp = LP(self.fm.localLogfile)
 
         total_start = pd.Timestamp(max(lp.movies[0].startTime, lp.frames[0].time)).ceil('H')
         total_stop = pd.Timestamp(min(lp.movies[-1].endTime, lp.frames[-1].time)).floor('H')
@@ -175,51 +169,19 @@ class DataObject:
     def pickle_data(self, dtype):
         print('pickling {} data'.format(dtype))
         if dtype == 'cluster':
-            cluster_pickle = self.fm.get_local_path(self.pid, 'data_cache', 'cluster_data.pkl')
-            self.fm.add_to_uploads(cluster_pickle)
-            with open(cluster_pickle, 'wb') as f:
+            with open(self.fm.localClusterPickle, 'wb') as f:
                 pickle.dump(self.cluster_data, f)
-            return 0 if os.path.exists(cluster_pickle) else 1
         elif dtype == 'depth':
-            depth_pickle = self.fm.get_local_path(self.pid, 'data_cache', 'depth_data.pkl')
-            self.fm.add_to_uploads(depth_pickle)
-            with open(depth_pickle, 'wb') as f:
+            with open(self.fm.localDepthPickle, 'wb') as f:
                 pickle.dump(self.depth_data, f)
-            return 0 if os.path.exists(depth_pickle) else 1
 
     def unpickle_data(self, dtype):
         print('unpickling {} data'.format(dtype))
         if dtype == 'cluster':
-            cluster_pickle = self.fm.get_local_path(self.pid, 'data_cache', 'cluster_data.pkl')
-            with open(cluster_pickle, 'rb') as f:
+            with open(self.fm.localClusterPickle, 'rb') as f:
                 self.cluster_data = pickle.load(f)
         elif dtype == 'depth':
-            depth_pickle = self.fm.get_local_path(self.pid, 'data_cache', 'depth_data.pkl')
-            with open(depth_pickle, 'rb') as f:
+            with open(self.fm.localDepthPickle, 'rb') as f:
                 self.depth_data = pickle.load(f)
 
-    def generate_legacy_filemanager(self):
-        pfm = SimpleNamespace()
-
-        pfm.localLogfile = self.fm.get_local_path(self.pid, 'Logfile.txt')
-        pfm.localTransMFile = self.fm.get_local_path(self.pid, 'MasterAnalysisFiles/TransMFile.npy')
-        pfm.localAllLabeledClustersFile = self.fm.get_local_path(self.pid, 'MasterAnalysisFiles/AllLabeledClusters.csv')
-        pfm.localTrayFile = self.fm.get_local_path(self.pid, 'MasterAnalysisFiles/DepthCrop.txt')
-        pfm.localSmoothDepthFile = self.fm.get_local_path(self.pid, 'MasterAnalysisFiles/smoothedDepthData.npy')
-
-        pfm.hourlyDepthThreshold = 0.2  # cm
-        pfm.dailyDepthThreshold = 0.4  # cm
-        pfm.totalDepthThreshold = 1.0  # cm
-        pfm.hourlyClusterThreshold = 1.0  # events/cm^2
-        pfm.dailyClusterThreshold = 2.0  # events/cm^2
-        pfm.totalClusterThreshold = 5.0  # events/cm^2
-        pfm.pixelLength = 0.1030168618  # cm / pixel
-        pfm.hourlyMinPixels = 1000
-        pfm.dailyMinPixels = 1000
-        pfm.totalMinPixels = 1000
-        pfm.bowerIndexFraction = 0.1
-        pfm.lightsOnTime = 8
-        pfm.lightsOffTime = 18
-
-        return pfm
 

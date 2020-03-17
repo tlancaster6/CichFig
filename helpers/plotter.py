@@ -33,9 +33,8 @@ def plotter_wrapper(plotter_method):
 
 class Plotter:
 
-    def __init__(self, data_object, file_manager):
+    def __init__(self, data_object):
         self.do = data_object
-        self.fm = file_manager
         self.pid = self.do.pid
         self.bids = ['c', 'p', 'b', 'f', 't', 'm', 's', 'd', 'o', 'x']
         self.n_days = len(self.do.cluster_data.daily.splits)
@@ -253,9 +252,19 @@ class Plotter:
         fig.current_row += 4
         pass
 
+    @plotter_wrapper
+    def hmm_background(self, fig=None):
+        for day in range(self.n_days):
+            ax = fig.new_subplot(row=fig.current_row, col=day)
+            ax.set_xlabel('day {}'.format(day), labelpad=-10)
+
+
+        fig.current_row += 1
+        pass
+
     def save_fig(self, fig, method_name):
         if fig.save_flag:
-            path = self.fm.get_local_path(os.path.join(self.pid, self.plot_params.loc[method_name, 'fname']))
+            path = self.do.fm.localFiguresDir + method_name + '.pdf'
             fig.savefig(path)
             plt.close('all')
 

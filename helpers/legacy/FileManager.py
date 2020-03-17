@@ -2,23 +2,23 @@ import os, subprocess, pdb, platform
 import pandas as pd
 
 
-class FileManager():
+class FileManager:
     def __init__(self, projectID=None):
 
         # Identify directory for temporary local files
         if platform.node() == 'raspberrypi' or 'Pi' in platform.node():
             self._identifyPiDirectory()
         else:
-            self.localMasterDir = os.getenv('HOME') + '/' + 'Temp/CichlidAnalyzer/'
+            self.localMasterDir = os.getenv('HOME') + '/' + 'scratch/CichlidAnalyzer/'
 
         # Identify cloud directory for rclone
         self.rcloneRemote = 'cichlidVideo:'
         # On some computers, the first directory is McGrath, on others it's BioSci-McGrath. Use rclone to figure out which
         output = subprocess.run(['rclone', 'lsf', self.rcloneRemote], capture_output=True, encoding='utf-8')
-        if 'McGrath/' in output.stdout.split():
-            self.cloudMasterDir = self.rcloneRemote + 'McGrath/Apps/CichlidPiData/'
-        elif 'BioSci-McGrath/' in output.stdout.split():
+        if 'BioSci-McGrath/' in output.stdout.split():
             self.cloudMasterDir = self.rcloneRemote + 'BioSci-McGrath/Apps/CichlidPiData/'
+        elif 'McGrath/' in output.stdout.split():
+            self.cloudMasterDir = self.rcloneRemote + 'McGrath/Apps/CichlidPiData/'
         else:
             raise Exception('Cant find master McGrath directory in rclone remote')
 
@@ -80,6 +80,10 @@ class FileManager():
 
         # Files created by manual labeler preparer
         self.localLabeledFramesFile = self.localAnalysisDir + 'LabeledFrames.csv'
+
+        # Files created by CichFig (excluding pdfs of figures)
+        self.localClusterPickle = self.localAnalysisDir + 'cluster_pickle.pkl'
+        self.localDepthPickle = self.localAnalysisDir + 'depth_pickle.pkl'
 
     # Files created by manual labeler preparer
 
@@ -154,7 +158,7 @@ class FileManager():
         elif dtype == 'ObjectLabeler':
             self.createDirectory(self.localMasterDir)
             self.createDirectory(self.localAnalysisDir)
-            self.downloadData(self.manualLabelFramesDir, tarred=True)
+            self.downloadData(self.localManualLabelFramesDir, tarred=True)
             try:
                 self.downloadData(self.localLabeledFramesFile)
             except FileNotFoundError:
