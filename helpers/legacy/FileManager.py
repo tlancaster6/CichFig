@@ -24,6 +24,7 @@ class FileManager:
 
         if projectID is not None:
             self.createProjectData(projectID)
+            self._createParameters()
 
         # Create file names
         self.createPiData()
@@ -257,11 +258,16 @@ class FileManager:
         return videoObj
 
     def _createParameters(self):
+        # Cluster related parameters
+        self.hourlyClusterThreshold = 1.0  # events/cm^2
+        self.dailyClusterThreshold = 2.0   # events/cm^2
+        self.totalClusterThreshold = 5.0   # events/cm^2
 
         # Depth related parameters
-        self.hourlyThreshold = 0.2
-        self.dailyThreshold = 0.4
-        self.totalThreshold = 1.0
+        self.hourlyDepthThreshold = 0.2	 # cm
+        self.dailyDepthThreshold = 0.4   # cm
+        self.totalDepthThreshold = 1.0   # cm
+
         self.hourlyMinPixels = 1000
         self.dailyMinPixels = 1000
         self.totalMinPixels = 1000

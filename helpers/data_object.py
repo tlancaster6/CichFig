@@ -18,6 +18,8 @@ class DataObject:
         self.cluster_data = SimpleNamespace()
 
     def load_data(self):
+        if not os.path.exists(self.fm.localProjectDir):
+            self.fm.downloadProjectData(dtype='Figures')
         if os.path.exists(self.fm.localDepthPickle):
             self.unpickle_data('depth')
         else:
@@ -31,21 +33,15 @@ class DataObject:
             self.prep_cluster_data()
 
     def prep_data(self):
-        if os.path.exists(self.fm.localClusterPickle):
-            print('cluster data already prepped. delete cluster_data.pkl to forcibly re-prep')
-        else:
-            print('running cluster data prep')
-            self.prep_cluster_data()
-
-        if os.path.exists(self.fm.localDepthPickle):
-            print('depth data already prepped. delete depth_data.pkl to forcibly re-prep')
-        else:
-            print('running depth data prep')
-            self.prep_depth_data()
+        if not os.path.exists(self.fm.localProjectDir):
+            self.fm.downloadProjectData(dtype='Figures')
+        print('running cluster data prep')
+        self.prep_cluster_data()
+        print('running depth data prep')
+        self.prep_depth_data()
 
     def prep_hmm_data(self):
         lp = LP(self.fm.localLogfile)
-
 
     def prep_depth_data(self):
 
