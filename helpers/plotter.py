@@ -254,17 +254,27 @@ class Plotter:
 
     @plotter_wrapper
     def hmm_background(self, fig=None):
-        for day in range(self.n_days):
-            ax = fig.new_subplot(row=fig.current_row, col=day)
-            ax.set_xlabel('day {}'.format(day), labelpad=-10)
+        # show how the hmm is capable of isolating the background, transient objects
+
+        pass
+
+    @plotter_wrapper
+    def hmm_progressions(self, fig=None):
+        # show how the hmm changes before, during, and after a cluster event
+
+        pass
 
 
-        fig.current_row += 1
+    @plotter_wrapper
+    def cluster_type_distribution(self, fig=None):
+        # show the distribution of cluster types
+
         pass
 
     @plotter_wrapper
     def manual_vs_automatic(self, fig=None):
         # compare manual and automatic annotations. Requires both are present in the all clusters csv file
+
         pass
 
     def save_fig(self, fig, method_name):

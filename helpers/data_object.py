@@ -43,6 +43,8 @@ class DataObject:
         self.prep_cluster_data()
         print('running depth data prep')
         self.prep_depth_data()
+        print('running hmm data prep')
+        self.prep_hmm_data()
 
     def prep_hmm_data(self):
         pass
@@ -183,5 +185,8 @@ class DataObject:
         elif dtype == 'depth':
             with open(self.fm.localDepthPickle, 'rb') as f:
                 self.depth_data = pickle.load(f)
+
+    def update_multiproject_data(self):
+        df = pd.read_csv(self.fm.localMultiProjectData, index_col='project')
 
 

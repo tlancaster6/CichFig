@@ -27,6 +27,7 @@ class FileManager:
             self._createParameters()
 
         # Create file names
+        self.createMultiProjectData()
         self.createPiData()
         self.createMLData()
         self.createAnnotationData()
@@ -34,6 +35,10 @@ class FileManager:
     def createPiData(self):
         self.localCredentialSpreadsheet = self.localMasterDir + '__CredentialFiles/SAcredentials.json'
         self.localCredentialDrive = self.localMasterDir + '__CredentialFiles/DriveCredentials.txt'
+
+    def createMultiProjectData(self):
+        self.localMultiProjectDir = self.localMasterDir + 'MultiProject/'
+        self.localMultiProjectData = self.localMultiProjectDir + 'multi_project_data.csv'
 
     def createProjectData(self, projectID):
         self.projectID = projectID
@@ -120,6 +125,7 @@ class FileManager:
         self.localBoxedFishDir = self.localObjectDetectionDir + 'BoxedImages/'
 
     def downloadProjectData(self, dtype):
+        print('downloading {} data for {}'.format(dtype, self.projectID))
 
         if dtype == 'Prep':
             self.createDirectory(self.localMasterDir)
