@@ -25,7 +25,7 @@ class DataHandler:
                 self.unload_projects(pid)
 
     def load_multiproject_data(self):
-        return pd.read_csv(FM().localMultiProjectData, index_col='project')
+        return pd.read_csv(FM().localMultiProjectData, index_col=0)
 
 
 

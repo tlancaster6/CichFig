@@ -4,9 +4,10 @@ from helpers.legacy.ClusterAnalyzer import ClusterAnalyzer as CA
 from helpers.legacy.LogParser import LogParser as LP
 from helpers.legacy.HMMAnalyzer import HMMAnalyzer as HA
 from types import SimpleNamespace
+from PIL import Image
 import pandas as pd
 import numpy as np
-import os, pickle
+import os, pickle, re
 
 
 class DataObject:
@@ -16,9 +17,11 @@ class DataObject:
         self.ca = None
         self.da = None
         self.lp = None
+        self.ha = None
         self.fm = FileManager(self.pid)
         self.depth_data = SimpleNamespace()
         self.cluster_data = SimpleNamespace()
+        self.hmm_data = SimpleNamespace()
 
     def load_data(self):
         if not os.path.exists(self.fm.localProjectDir):
@@ -36,7 +39,9 @@ class DataObject:
             self.prep_cluster_data()
         self.da = DA(self.fm) if self.da is None else self.da
         self.ca = CA(self.fm) if self.ca is None else self.ca
-        self.lp = LP(self.fm) if self.lp is None else self.lp
+        self.lp = LP(self.fm.localLogfile) if self.lp is None else self.lp
+        print('running hmm data prep')
+        self.prep_hmm_data()
         self.update_multiproject_data()
 
     def prep_data(self):
@@ -50,7 +55,35 @@ class DataObject:
         self.prep_hmm_data()
 
     def prep_hmm_data(self):
-        boxed_fish = pd.read_csv(self.fm.localBoxedFishFile)
+        boxed_fish = pd.read_csv(self.fm.localBoxedFishFile, index_col=0)
+        if self.pid in boxed_fish.ProjectID.values:
+            self.fm.downloadData(self.fm.localBoxedFishDir + self.pid, tarred=True)
+            boxed_fish = boxed_fish[boxed_fish.ProjectID == self.pid]
+            boxed_fish = boxed_fish[boxed_fish.Nfish == 1]
+            vid = re.search(r'\d+(?=_vid)', boxed_fish.iloc[0].Framefile).group(0)
+            boxed_fish = boxed_fish[[vid in fname for fname in boxed_fish.Framefile.str.split('_').to_list()]]
+
+            def square_box(box):
+                box = tuple(map(int, box.strip('()').split(',')))
+                return box[0] + box[2]//2 - 150, box[1] + box[3]//2 - 150, 300, 300
+
+            boxed_fish.Box = boxed_fish.apply(lambda row: square_box(row.Box), axis=1)
+            self.fm.downloadData(self.fm.localTroubleshootingDir + vid + '_vid.hmm.npy')
+            self.fm.downloadData(self.fm.localTroubleshootingDir + vid + '_vid.hmm.txt')
+            self.ha = HA(self.fm.returnVideoObject(int(vid) - 1).localHMMFile)
+
+            self.hmm_data.originals = []
+            self.hmm_data.backgrounds = []
+            for ax, (index, row) in enumerate(boxed_fish.iterrows()):
+                crop = np.s_[row.Box[1]: row.Box[1] + row.Box[3], row.Box[0]: row.Box[0] + row.Box[2]]
+                original = Image.open(self.fm.localBoxedFishDir + self.pid + '/' + row.Framefile).convert('L')
+                original = np.asarray(original)[crop]
+                background = self.ha.retImage(index)[crop]
+                if original.shape == background.shape == (300, 300):
+                    self.hmm_data.originals.append(original)
+                    self.hmm_data.backgrounds.append(background)
+
+
 
 
     def prep_depth_data(self):
@@ -148,7 +181,7 @@ class DataObject:
         self.pickle_data(dtype='cluster')
 
     def determine_splits(self):
-        lp = LP(self.fm.localLogfile)
+        lp = LP(self.fm.localLogfile) if self.lp is None else self.lp
 
         total_start = pd.Timestamp(max(lp.movies[0].startTime, lp.frames[0].time)).ceil('H')
         total_stop = pd.Timestamp(min(lp.movies[-1].endTime, lp.frames[-1].time)).floor('H')
@@ -191,8 +224,9 @@ class DataObject:
                 self.depth_data = pickle.load(f)
 
     def update_multiproject_data(self):
-        df = pd.read_csv(self.fm.localMultiProjectData, index_col='project').to_dict('index')
+        df = pd.read_csv(self.fm.localMultiProjectData, index_col=0).to_dict('index')
         df.update({self.pid: {'n_transitions': 0, 'n_assigned_transitions': 0, 'n_clusters': 0}})
+        df = pd.DataFrame(df).T if len(df) == 1 else pd.DataFrame(df)
         pd.DataFrame(df).to_csv(self.fm.localMultiProjectData)
 
 

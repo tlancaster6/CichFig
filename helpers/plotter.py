@@ -22,7 +22,7 @@ viridis_gapped = ListedColormap(viridis_gapped)
 
 
 def plotter_wrapper(plotter_method):
-    def wrapper(plotter, fig):
+    def wrapper(plotter, fig=None):
         method_name = plotter_method.__name__
         fig = plotter.generate_fig(method_name) if fig is None else fig
         plotter.title(fig, method_name)
@@ -250,12 +250,23 @@ class Plotter:
         fig.array_plot(self.do.cluster_data.total.bower_locations, ax=ax, vmax=1, alpha=0.75)
         fig.array_plot(self.do.depth_data.total.bower_locations, ax=ax, vmax=1, alpha=0.75)
         fig.current_row += 4
-        pass
 
     @plotter_wrapper
     def hmm_background(self, fig=None):
         # show how the hmm is capable of isolating the background, ignoring transient objects
-        pass
+        if len(self.do.hmm_data.originals) > self.n_days:
+            originals = self.do.hmm_data.originals[:self.n_days]
+            backgrounds = self.do.hmm_data.backgrounds[:self.n_days]
+        else:
+            originals = self.do.hmm_data.originals
+            backgrounds = self.do.hmm_data.backgrounds
+        for col in range(self.n_days):
+            ax = fig.new_subplot(row=fig.current_row, col=col, despine=True)
+            ax.imshow(originals[col], cmap='Greys')
+            ax = fig.new_subplot(row=fig.current_row + 1, col=col, despine=True)
+            ax.imshow(backgrounds[col], cmap='Greys')
+        fig.current_row += 2
+
 
     @plotter_wrapper
     def hmm_progressions(self, fig=None):
@@ -284,6 +295,7 @@ class Plotter:
     def load_params(self):
         params = pd.read_csv('helpers/plot_params.csv', index_col=0)
         params.w[params.w == 0] = self.n_days + 1
+        params.loc['plot_all', 'h'] = params['h'].sum()
         return params
 
     def generate_fig(self, method_name):
