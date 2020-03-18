@@ -192,7 +192,7 @@ class Plotter:
         data = {'height': np.ravel(self.do.depth_data.total.height_change)}
         for bid in self.bids:
             data.update({bid: np.abs(np.ravel(self.do.cluster_data.total.kdes.__dict__[bid]))})
-        data = pd.DataFrame(data).dropna(axis=0, how='any').corr()
+        data = pd.DataFrame(data).dropna(axis=0, how='any').corr().fillna(0)
         order = [data.columns.to_list()[i] for i in dendrogram(linkage(data.values), no_plot=True)['leaves']]
         data = data[order].reindex(order)
         ax = fig.new_subplot(row=fig.current_row, col=0, row_span=4, col_span=self.n_days)
@@ -260,6 +260,11 @@ class Plotter:
 
 
         fig.current_row += 1
+        pass
+
+    @plotter_wrapper
+    def manual_vs_automatic(self, fig=None):
+        # compare manual and automatic annotations. Requires both are present in the all clusters csv file
         pass
 
     def save_fig(self, fig, method_name):

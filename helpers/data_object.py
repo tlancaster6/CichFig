@@ -13,6 +13,9 @@ class DataObject:
 
     def __init__(self, pid):
         self.pid = pid
+        self.ca = None
+        self.da = None
+        self.lp = None
         self.fm = FileManager(self.pid)
         self.depth_data = SimpleNamespace()
         self.cluster_data = SimpleNamespace()
@@ -31,6 +34,7 @@ class DataObject:
         else:
             print('no pkl file found. running cluster data prep')
             self.prep_cluster_data()
+        self.lp = LP(self.fm.localLogfile)
 
     def prep_data(self):
         if not os.path.exists(self.fm.localProjectDir):
@@ -41,7 +45,7 @@ class DataObject:
         self.prep_depth_data()
 
     def prep_hmm_data(self):
-        lp = LP(self.fm.localLogfile)
+        pass
 
     def prep_depth_data(self):
 
@@ -54,27 +58,27 @@ class DataObject:
         self.depth_data.daily.splits = splits[1]
         self.depth_data.total.splits = splits[2]
 
-        da = DA(self.fm)
+        self.da = DA(self.fm)
 
         self.depth_data.hourly.height_change = np.stack(
-            [da.returnHeightChange(t0, t1, cropped=True) for t0, t1 in splits[0]])
+            [self.da.returnHeightChange(t0, t1, cropped=True) for t0, t1 in splits[0]])
         self.depth_data.daily.height_change = np.stack(
-            [da.returnHeightChange(t0, t1, cropped=True) for t0, t1 in splits[1]])
-        self.depth_data.total.height_change = da.returnHeightChange(splits[2][0], splits[2][1], cropped=True)
+            [self.da.returnHeightChange(t0, t1, cropped=True) for t0, t1 in splits[1]])
+        self.depth_data.total.height_change = self.da.returnHeightChange(splits[2][0], splits[2][1], cropped=True)
 
         self.depth_data.hourly.bower_locations = np.stack(
-            [da.returnBowerLocations(t0, t1, cropped=True) for t0, t1 in splits[0]])
+            [self.da.returnBowerLocations(t0, t1, cropped=True) for t0, t1 in splits[0]])
         self.depth_data.daily.bower_locations = np.stack(
-            [da.returnBowerLocations(t0, t1, cropped=True) for t0, t1 in splits[1]])
-        self.depth_data.total.bower_locations = da.returnBowerLocations(splits[2][0], splits[2][1], cropped=True)
+            [self.da.returnBowerLocations(t0, t1, cropped=True) for t0, t1 in splits[1]])
+        self.depth_data.total.bower_locations = self.da.returnBowerLocations(splits[2][0], splits[2][1], cropped=True)
 
-        self.depth_data.hourly.bower_index = [da.returnVolumeSummary(self.depth_data.hourly.bower_locations[i],
+        self.depth_data.hourly.bower_index = [self.da.returnVolumeSummary(self.depth_data.hourly.bower_locations[i],
                                               self.depth_data.hourly.height_change[i]).bowerIndex
                                               for i in range(self.depth_data.hourly.bower_locations.shape[0])]
-        self.depth_data.daily.bower_index = [da.returnVolumeSummary(self.depth_data.daily.bower_locations[i],
+        self.depth_data.daily.bower_index = [self.da.returnVolumeSummary(self.depth_data.daily.bower_locations[i],
                                              self.depth_data.daily.height_change[i]).bowerIndex
                                              for i in range(self.depth_data.daily.bower_locations.shape[0])]
-        self.depth_data.total.bower_index = da.returnVolumeSummary(self.depth_data.total.bower_locations,
+        self.depth_data.total.bower_index = self.da.returnVolumeSummary(self.depth_data.total.bower_locations,
                                             self.depth_data.total.height_change).bowerIndex
 
         self.pickle_data(dtype='depth')
@@ -99,39 +103,39 @@ class DataObject:
         self.cluster_data.daily.splits = splits[1]
         self.cluster_data.total.splits = splits[2]
 
-        ca = CA(self.fm)
+        self.ca = CA(self.fm)
 
         self.cluster_data.hourly.kdes = SimpleNamespace()
         self.cluster_data.daily.kdes = SimpleNamespace()
         self.cluster_data.total.kdes = SimpleNamespace()
 
-        for bid in ca.bids:
+        for bid in self.ca.bids:
             self.cluster_data.hourly.kdes.__dict__.update(
-                {bid: np.stack([ca.returnClusterKDE(t0, t1, bid, cropped=True) for t0, t1 in splits[0]])})
+                {bid: np.stack([self.ca.returnClusterKDE(t0, t1, bid, cropped=True) for t0, t1 in splits[0]])})
             self.cluster_data.daily.kdes.__dict__.update(
-                {bid: np.stack([ca.returnClusterKDE(t0, t1, bid, cropped=True) for t0, t1 in splits[1]])})
+                {bid: np.stack([self.ca.returnClusterKDE(t0, t1, bid, cropped=True) for t0, t1 in splits[1]])})
             self.cluster_data.total.kdes.__dict__.update(
-                {bid: ca.returnClusterKDE(splits[2][0], splits[2][1], bid, cropped=True)})
+                {bid: self.ca.returnClusterKDE(splits[2][0], splits[2][1], bid, cropped=True)})
 
         self.cluster_data.hourly.bower_locations = np.stack(
-            [ca.returnBowerLocations(t0, t1, cropped=True, scoopKde=self.cluster_data.hourly.kdes.c[i],
+            [self.ca.returnBowerLocations(t0, t1, cropped=True, scoopKde=self.cluster_data.hourly.kdes.c[i],
              spitKde=self.cluster_data.hourly.kdes.p[i]) for i, (t0, t1) in enumerate(splits[0])])
         self.cluster_data.daily.bower_locations = np.stack(
-            [ca.returnBowerLocations(t0, t1, cropped=True, scoopKde=self.cluster_data.daily.kdes.c[i],
+            [self.ca.returnBowerLocations(t0, t1, cropped=True, scoopKde=self.cluster_data.daily.kdes.c[i],
              spitKde=self.cluster_data.daily.kdes.p[i]) for i, (t0, t1) in enumerate(splits[1])])
-        self.cluster_data.total.bower_locations = ca.returnBowerLocations(
+        self.cluster_data.total.bower_locations = self.ca.returnBowerLocations(
             splits[2][0], splits[2][1], cropped=True, scoopKde=self.cluster_data.total.kdes.c,
             spitKde=self.cluster_data.total.kdes.p)
 
-        self.cluster_data.hourly.bower_index = [ca.returnClusterSummary(self.cluster_data.hourly.bower_locations[i],
+        self.cluster_data.hourly.bower_index = [self.ca.returnClusterSummary(self.cluster_data.hourly.bower_locations[i],
                                                 self.cluster_data.hourly.kdes.p[i],
                                                 self.cluster_data.hourly.kdes.c[i]).bowerIndex for i in
                                                 range(self.cluster_data.hourly.bower_locations.shape[0])]
-        self.cluster_data.daily.bower_index = [ca.returnClusterSummary(self.cluster_data.daily.bower_locations[i],
+        self.cluster_data.daily.bower_index = [self.ca.returnClusterSummary(self.cluster_data.daily.bower_locations[i],
                                                self.cluster_data.daily.kdes.p[i],
                                                self.cluster_data.daily.kdes.c[i]).bowerIndex for i in
                                                range(self.cluster_data.daily.bower_locations.shape[0])]
-        self.cluster_data.total.bower_index = ca.returnClusterSummary(self.cluster_data.total.bower_locations,
+        self.cluster_data.total.bower_index = self.ca.returnClusterSummary(self.cluster_data.total.bower_locations,
                                               self.cluster_data.total.kdes.p,
                                               self.cluster_data.total.kdes.c).bowerIndex
 

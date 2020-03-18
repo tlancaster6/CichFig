@@ -16,4 +16,5 @@ total_cluster_bowers,4,5,1,Whole Trial Behavioral Density Bower
 total_height_bowers,4,5,1,Whole Trial Height Change Bower
 total_bower_overlap,4,5,1,Whole Trial Bower Overlap
 hmm_background,0,2,1,HMM Background Isolation Examples
+manual_vs_automatic,0,,1,Comparison of Manual and Automatic Annotation
 plot_all,0,0,1,

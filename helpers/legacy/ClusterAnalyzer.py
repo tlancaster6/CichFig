@@ -80,7 +80,7 @@ class ClusterAnalyzer:
 
     def returnClusterKDE(self, t0, t1, bid, cropped=False, bandwidth=None):
         if bandwidth is None:
-            bandwidth = self.sliceDataframe(t0, t1, bid, 'approx_radius').mean() / 2.355
+            bandwidth = self.sliceDataframe(t0, t1, bid, 'approx_radius').mean()
         df_slice = self.sliceDataframe(t0=t0, t1=t1, bid=bid, cropped=cropped, columns=['X_depth', 'Y_depth'])
         n_events = len(df_slice.index)
         x_bins = int(self.tray_r[2] - self.tray_r[0])
