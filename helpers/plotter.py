@@ -254,14 +254,12 @@ class Plotter:
 
     @plotter_wrapper
     def hmm_background(self, fig=None):
-        # show how the hmm is capable of isolating the background, transient objects
-
+        # show how the hmm is capable of isolating the background, ignoring transient objects
         pass
 
     @plotter_wrapper
     def hmm_progressions(self, fig=None):
         # show how the hmm changes before, during, and after a cluster event
-
         pass
 
 
@@ -286,7 +284,6 @@ class Plotter:
     def load_params(self):
         params = pd.read_csv('helpers/plot_params.csv', index_col=0)
         params.w[params.w == 0] = self.n_days + 1
-        params.loc['plot_all', 'h'] = params['h'].sum()
         return params
 
     def generate_fig(self, method_name):

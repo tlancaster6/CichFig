@@ -34,7 +34,10 @@ class DataObject:
         else:
             print('no pkl file found. running cluster data prep')
             self.prep_cluster_data()
-        self.lp = LP(self.fm.localLogfile)
+        self.da = DA(self.fm) if self.da is None else self.da
+        self.ca = CA(self.fm) if self.ca is None else self.ca
+        self.lp = LP(self.fm) if self.lp is None else self.lp
+        self.update_multiproject_data()
 
     def prep_data(self):
         if not os.path.exists(self.fm.localProjectDir):
@@ -47,7 +50,8 @@ class DataObject:
         self.prep_hmm_data()
 
     def prep_hmm_data(self):
-        pass
+        boxed_fish = pd.read_csv(self.fm.localBoxedFishFile)
+
 
     def prep_depth_data(self):
 
@@ -187,6 +191,9 @@ class DataObject:
                 self.depth_data = pickle.load(f)
 
     def update_multiproject_data(self):
-        df = pd.read_csv(self.fm.localMultiProjectData, index_col='project')
+        df = pd.read_csv(self.fm.localMultiProjectData, index_col='project').to_dict('index')
+        df.update({self.pid: {'n_transitions': 0, 'n_assigned_transitions': 0, 'n_clusters': 0}})
+        pd.DataFrame(df).to_csv(self.fm.localMultiProjectData)
+
 
 

@@ -176,6 +176,7 @@ class FileManager:
             self.createDirectory(self.localFiguresDir)
             self.downloadData(self.localLogfile)
             self.downloadData(self.localAnalysisDir)
+            self.downloadData(self.localBoxedFishFile)
 
         elif dtype == 'All':
             self.createDirectory(self.localMasterDir)
