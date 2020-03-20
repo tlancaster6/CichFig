@@ -1,19 +1,21 @@
-plotter_method,w,h,c,title
-daily_bower_overlap,0,2,1,Daily Bower Overlaps
-daily_cluster_bowers,0,2,1,Daily Behavioral Density Bowers
-daily_height_bowers,0,2,1,Daily Height Change Bowers
-daily_heights,0,2,1,Daily Height Changes
-daily_indices,0,3,1,Daily Bower Indices
-daily_kdes,0,11,1,Daily Behavioral Densities
-daily_spit_scoop_difference,0,2,1,Daily Spit Density Minus Scoop Density
-hourly_heights,0,11,1,Hourly Height Changes
-hourly_spit_scoop_difference,0,11,1,Hourly Spit Density Minus Scoop Density
-total_kdes,4,41,1,Whole Trial Behavioral Densities
-total_heights,4,5,1,Whole Trial Height Change
-total_correlations,4,5,1,Whole Trial Spatial Correlations
-total_spit_scoop_difference,4,5,1,Whole Trial Spit Density Minus Scoop Density
-total_cluster_bowers,4,5,1,Whole Trial Behavioral Density Bower
-total_height_bowers,4,5,1,Whole Trial Height Change Bower
-total_bower_overlap,4,5,1,Whole Trial Bower Overlap
-hmm_background,0,3,1,HMM Background Isolation Examples
-plot_all,0,0,1,
+plotter_method,title,h
+daily_bower_overlap,Daily Bower Overlaps,2
+daily_cluster_bowers,Daily Behavioral Density Bowers,2
+daily_height_bowers,Daily Height Change Bowers,2
+daily_heights,Daily Height Changes,2
+daily_indices,Daily Bower Indices,3
+daily_kdes,Daily Behavioral Densities,11
+daily_spit_scoop_difference,Daily Spit Density Minus Scoop Density,2
+hourly_heights,Hourly Height Changes,11
+hourly_spit_scoop_difference,Hourly Spit Density Minus Scoop Density,11
+total_kdes,Whole Trial Behavioral Densities,41
+total_heights,Whole Trial Height Change,5
+total_correlations,Whole Trial Spatial Correlations,5
+total_spit_scoop_difference,Whole Trial Spit Density Minus Scoop Density,5
+total_cluster_bowers,Whole Trial Behavioral Density Bower,5
+total_height_bowers,Whole Trial Height Change Bower,5
+total_bower_overlap,Whole Trial Bower Overlap,5
+hmm_background,HMM Background Isolation Examples,3
+three_fish_hmm_background,HMM Background Isolation Example,5
+hmm_progressions,Change in HMM with a Cluster Event, 11
+

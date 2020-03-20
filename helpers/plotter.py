@@ -40,10 +40,15 @@ class Plotter:
         self.n_days = len(self.do.cluster_data.daily.splits)
         self.plot_params = self.load_params()
 
-    def plot_all(self):
-        method_name = 'plot_all'
-        fig = self.generate_fig(method_name)
+    def plot_multiple(self, plotting_order, f_name):
+        fig = self.generate_fig([m.__name__ for m in plotting_order])
         fig.save_flag = False
+        for method in plotting_order:
+            method(fig=fig)
+        fig.save_flag = True
+        self.save_fig(fig, f_name)
+
+    def plot_all_depth_and_kde(self):
         plotting_order = [
             self.total_kdes,
             self.total_correlations,
@@ -62,10 +67,16 @@ class Plotter:
             self.hourly_spit_scoop_difference,
             self.hourly_heights
         ]
-        for method in plotting_order:
-            method(fig=fig)
-        fig.save_flag = True
-        self.save_fig(fig, method_name)
+        self.plot_multiple(plotting_order, 'plot_all_depth_and_kde')
+
+    def plot_all_hmm(self):
+        plotting_order = [
+            self.hmm_background,
+            self.three_fish_hmm_background,
+            self.hmm_progressions
+        ]
+        self.plot_multiple(plotting_order, 'plot_all_hmm')
+
 
     @plotter_wrapper
     def daily_kdes(self, fig=None):
@@ -262,29 +273,30 @@ class Plotter:
             backgrounds = self.do.hmm_data.backgrounds
         for col in range(self.n_days):
             ax = fig.new_subplot(row=fig.current_row, col=col, despine=True)
-            ax.imshow(originals[col], cmap='Greys')
+            ax.imshow(originals[col], cmap='gray')
             ax = fig.new_subplot(row=fig.current_row + 1, col=col, despine=True)
-            ax.imshow(backgrounds[col], cmap='Greys')
+            ax.imshow(backgrounds[col], cmap='gray')
         fig.current_row += 2
 
+    @plotter_wrapper
+    def three_fish_hmm_background(self, fig=None):
+        # same as hmm_background, but instead of multiple single fish examples, shows a single 4-fish example
+        original = self.do.hmm_data.three_fish_originals[0]
+        background = self.do.hmm_data.three_fish_backgrounds[0]
+        axes = fig.new_subplot(row=fig.current_row, col=0, row_span=4, col_span=self.n_days, despine=True, subspec=(1, 2))
+        axes[0, 0].imshow(original, cmap='gray')
+        axes[0, 1].imshow(background, cmap='gray')
+        fig.current_row += 4
 
     @plotter_wrapper
     def hmm_progressions(self, fig=None):
         # show how the hmm changes before, during, and after a cluster event
-        pass
-
-
-    @plotter_wrapper
-    def cluster_type_distribution(self, fig=None):
-        # show the distribution of cluster types
-
-        pass
-
-    @plotter_wrapper
-    def manual_vs_automatic(self, fig=None):
-        # compare manual and automatic annotations. Requires both are present in the all clusters csv file
-
-        pass
+        axes = fig.new_subplot(row=fig.current_row, col=0, row_span=10, col_span=self.n_days, despine=True, subspec=(10, 5))
+        for row, bid in enumerate(self.bids):
+            for col in range(5):
+                axes[row, col].imshow(self.do.hmm_data.hmm_progressions[bid][col], cmap='gray')
+                axes[row, 0].set_ylabel(bid)
+        fig.current_row += 10
 
     def save_fig(self, fig, method_name):
         if fig.save_flag:
@@ -294,13 +306,13 @@ class Plotter:
 
     def load_params(self):
         params = pd.read_csv('helpers/plot_params.csv', index_col=0)
-        params.w[params.w == 0] = self.n_days + 1
-        params.loc['plot_all', 'h'] = params['h'].sum()
+        params['w'] = self.n_days + 1
+        params['c'] = 1
         return params
 
-    def generate_fig(self, method_name):
-        params = self.plot_params.loc[method_name]
-        rows, cols, cell = params['h'], params['w'], params['c']
+    def generate_fig(self, *method_names):
+        params = self.plot_params.loc[method_names]
+        rows, cols, cell = params['h'].sum(), params['w'].max(), params['c'].max()
         return CustomFigure(nrows=rows, ncols=cols, cell_size=cell)
 
     def title(self, fig, method_name):
@@ -321,12 +333,30 @@ class CustomFigure(Figure):
         self.h = nrows
         self.w = ncols
 
-    def new_subplot(self, row, col, row_span=1, col_span=1, despine=False, aspect='equal'):
-        ax = self.add_subplot(self.spec[row: row + row_span, col: col + col_span], aspect=aspect)
-        if despine:
-            sns.despine(ax=ax, left=True, bottom=True)
-            ax.tick_params(colors=[0, 0, 0, 0])
-        return ax
+    def new_subplot(self, row, col, row_span=1, col_span=1, despine=False, aspect='equal', subspec=None):
+        # takes a row number, column number, row span, and column span, and returns a new subplot instance ax.
+        # if 'despine' is set to True, the subplot axes and ticks are made invisible.
+        # the parameter 'aspect' can be used to control the subplot aspect ratio (see matplotlib's add_subplot function)
+        # passing a tuple (m, n) to 'subspec' will instead return an (m x n) array of equally sized subplot objects
+        # occupying the space that would otherwise be allocated to the single subplot object returned when subspec is
+        # None
+        if subspec is None:
+            ax = self.add_subplot(self.spec[row: row + row_span, col: col + col_span], aspect=aspect)
+            if despine:
+                sns.despine(ax=ax, left=True, bottom=True)
+                ax.tick_params(colors=[0, 0, 0, 0])
+            return ax
+        else:
+            inner_spec = self.spec[row: row + row_span, col: col + col_span].subgridspec(subspec[0], subspec[1])
+            ax = []
+            for r in range(subspec[0]):
+                ax.append([])
+                for c in range(subspec[1]):
+                    ax[r].append(self.add_subplot(inner_spec[r, c], aspect='equal'))
+                    if despine:
+                        sns.despine(ax=ax[r][c], left=True, bottom=True)
+                        ax[r][c].tick_params(colors=[0, 0, 0, 0])
+            return np.array(ax)
 
     def array_plot(self, array, ax=None, vmin=None, vmax=None, cmap='viridis', **kwargs):
         # uses matplotlib.pyplot.imshow() to create a colorized image of array. Used to plot depth change and kde arrays

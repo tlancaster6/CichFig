@@ -55,35 +55,60 @@ class DataObject:
         self.prep_hmm_data()
 
     def prep_hmm_data(self):
+        # prep data for the hmm_background and 3_fish_hmm_background plots
+        box_size = 300
         boxed_fish = pd.read_csv(self.fm.localBoxedFishFile, index_col=0)
         if self.pid in boxed_fish.ProjectID.values:
             self.fm.downloadData(self.fm.localBoxedFishDir + self.pid, tarred=True)
             boxed_fish = boxed_fish[boxed_fish.ProjectID == self.pid]
-            boxed_fish = boxed_fish[boxed_fish.Nfish == 1]
-            vid = re.search(r'\d+(?=_vid)', boxed_fish.iloc[0].Framefile).group(0)
-            boxed_fish = boxed_fish[[vid in fname for fname in boxed_fish.Framefile.str.split('_').to_list()]]
+            boxed_fish = boxed_fish[boxed_fish.Nfish >= 1]
+            boxed_fish_3 = boxed_fish[boxed_fish.Nfish == 3]
+            vid = re.search(r'\d+(?=_vid)', boxed_fish_3.iloc[0].Framefile).group(0)
+            for df in boxed_fish, boxed_fish_3:
+                df = df[[vid in fname for fname in df.Framefile.str.split('_').to_list()]]
+                df.drop_duplicates(subset='Framefile', inplace=True)
 
-            def square_box(box):
+            def square_box(box, size):
                 box = tuple(map(int, box.strip('()').split(',')))
-                return box[0] + box[2]//2 - 150, box[1] + box[3]//2 - 150, 300, 300
+                return box[0] + box[2]//2 - size//2, box[1] + box[3]//2 - size//2, size, size
 
-            boxed_fish.Box = boxed_fish.apply(lambda row: square_box(row.Box), axis=1)
+            boxed_fish.Box = boxed_fish.apply(lambda row: square_box(row.Box, box_size), axis=1)
             self.fm.downloadData(self.fm.localTroubleshootingDir + vid + '_vid.hmm.npy')
             self.fm.downloadData(self.fm.localTroubleshootingDir + vid + '_vid.hmm.txt')
             self.ha = HA(self.fm.returnVideoObject(int(vid) - 1).localHMMFile)
 
             self.hmm_data.originals = []
             self.hmm_data.backgrounds = []
-            for ax, (index, row) in enumerate(boxed_fish.iterrows()):
+            d = self.fm.localBoxedFishDir + self.pid + '/'
+            for index, row in boxed_fish.iterrows():
                 crop = np.s_[row.Box[1]: row.Box[1] + row.Box[3], row.Box[0]: row.Box[0] + row.Box[2]]
-                original = Image.open(self.fm.localBoxedFishDir + self.pid + '/' + row.Framefile).convert('L')
-                original = np.asarray(original)[crop]
+                original = np.asarray(Image.open(d + row.Framefile).convert('L'))[crop]
                 background = self.ha.retImage(index)[crop]
-                if original.shape == background.shape == (300, 300):
+                if original.shape == background.shape == (box_size, box_size):
                     self.hmm_data.originals.append(original)
                     self.hmm_data.backgrounds.append(background)
 
+            self.hmm_data.three_fish_originals = []
+            self.hmm_data.three_fish_backgrounds = []
+            for index, row in boxed_fish_3.iterrows():
+                self.hmm_data.three_fish_originals.append(np.asarray(Image.open(d + row.Framefile).convert('L')))
+                self.hmm_data.three_fish_backgrounds.append(self.ha.retImage(index))
 
+        # prep data for the hmm progressions plot
+        self.hmm_data.hmm_progressions = {}
+        best_day = self.ca.clusterData.groupby('videoID')['Model18_All_pred'].unique().apply(len).argmax()
+        self.fm.downloadData(self.fm.localTroubleshootingDir + '{:04d}'.format(best_day + 1) + '_vid.hmm.npy')
+        self.fm.downloadData(self.fm.localTroubleshootingDir + '{:04d}'.format(best_day + 1) + '_vid.hmm.txt')
+        self.ha = HA(self.fm.returnVideoObject(int(best_day)).localHMMFile)
+        t0 = self.lp.movies[best_day].startTime.replace(hour=8, minute=0, second=0, microsecond=0)
+        t1 = t0.replace(hour=18)
+        df = self.ca.sliceDataframe(t0=t0, t1=t1, columns=['X', 'Y', 't', 'Model18_All_pred', 'ClipName'])
+        framerate = self.lp[best_day].framerate
+        for bid in self.ca.bids:
+            event = self.ca.sliceDataframe(bid=bid, input_frame=df).sample(1)
+            crop = np.s_[event.X - 25: event.X + 25, event.Y - 25: event.Y + 25]
+            frames = np.linspace((event.t - 20) * framerate,  (event.t + 2) * framerate, 5)
+            self.hmm_data.hmm_progressions.update({bid: [self.ha.retImage(t)[crop] for t in frames]})
 
 
     def prep_depth_data(self):
