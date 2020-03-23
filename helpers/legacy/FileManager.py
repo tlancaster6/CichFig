@@ -4,7 +4,6 @@ import pandas as pd
 
 class FileManager:
     def __init__(self, projectID=None):
-
         # Identify directory for temporary local files
         if platform.node() == 'raspberrypi' or 'Pi' in platform.node():
             self._identifyPiDirectory()
@@ -178,6 +177,7 @@ class FileManager:
             self.downloadData(self.localLogfile)
             self.downloadData(self.localAnalysisDir)
             self.downloadData(self.localBoxedFishFile)
+            self.get_missing()
 
         elif dtype == 'All':
             self.createDirectory(self.localMasterDir)
@@ -399,3 +399,14 @@ class FileManager:
         if output.returncode != 0:
             pdb.set_trace()
             raise Exception('Error in uploading file: ' + output.stderr)
+
+    def check_exists_cloud(self, local_data):
+        cloud_path = local_data.replace(self.localMasterDir, self.cloudMasterDir)
+        exists = subprocess.run(['rclone', 'lsf', cloud_path], capture_output=True, encoding='utf-8').stdout != ''
+        return exists
+
+    def get_missing(self):
+        if not self.check_exists_cloud(self.localTrayFile):
+            alt_path = self.cloudMasterDir + self.projectID + '/DepthAnalysis/TrayInfo.txt'
+            subprocess.run(['rclone', 'copy', alt_path, self.localTrayFile])
+

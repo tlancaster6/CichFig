@@ -1,9 +1,12 @@
 from cich_fig import CichFig as CF
 from helpers.plotter import Plotter
 
-pid = 'CV_fem_con1'
+# pid = 'CV10_3'
+# cf = CF()
+# cf.add_projects(pid)
+# cf.plot('plot_all_depth_and_kde')
+
+pid = 'MC6_5'
 cf = CF()
 cf.add_projects(pid)
-cf.plot('plot_all_hmm')
-
-
+cf.plot('hmm_progressions')
