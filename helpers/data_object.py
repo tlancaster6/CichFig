@@ -103,10 +103,10 @@ class DataObject:
         t0 = self.lp.movies[best_day].startTime.replace(hour=8, minute=0, second=0, microsecond=0)
         t1 = t0.replace(hour=18)
         df = self.ca.sliceDataframe(t0=t0, t1=t1, columns=['X', 'Y', 't', 'Model18_All_pred', 'ClipName'])
-        framerate = self.lp[best_day].framerate
+        framerate = self.lp.movies[best_day].framerate
         for bid in self.ca.bids:
             event = self.ca.sliceDataframe(bid=bid, input_frame=df).sample(1)
-            crop = np.s_[event.X - 25: event.X + 25, event.Y - 25: event.Y + 25]
+            crop = np.s_[int(event.X) - 25: int(event.X) + 25, int(event.Y) - 25: int(event.Y) + 25]
             frames = np.linspace((event.t - 20) * framerate,  (event.t + 2) * framerate, 5)
             self.hmm_data.hmm_progressions.update({bid: [self.ha.retImage(t)[crop] for t in frames]})
 

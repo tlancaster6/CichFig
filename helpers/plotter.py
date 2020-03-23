@@ -41,7 +41,7 @@ class Plotter:
         self.plot_params = self.load_params()
 
     def plot_multiple(self, plotting_order, f_name):
-        fig = self.generate_fig([m.__name__ for m in plotting_order])
+        fig = self.generate_fig(m.__name__ for m in plotting_order)
         fig.save_flag = False
         for method in plotting_order:
             method(fig=fig)
@@ -311,7 +311,8 @@ class Plotter:
         return params
 
     def generate_fig(self, *method_names):
-        params = self.plot_params.loc[method_names]
+        print(type(method_names))
+        params = self.plot_params.loc[list(method_names)]
         rows, cols, cell = params['h'].sum(), params['w'].max(), params['c'].max()
         return CustomFigure(nrows=rows, ncols=cols, cell_size=cell)
 
