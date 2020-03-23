@@ -116,7 +116,7 @@ class DataObject:
             crop = np.s_[int(event.X) - 25: int(event.X) + 25, int(event.Y) - 25: int(event.Y) + 25]
             frames = np.linspace((event.t - 20) * framerate,  (event.t + 20) * framerate, 5)
             self.hmm_data.hmm_progressions.update({bid: [self.ha.retImage(t)[crop] for t in frames]})
-
+        self.pickle_data(dtype='hmm')
 
     def prep_depth_data(self):
 

@@ -297,6 +297,8 @@ class Plotter:
             for col in range(5):
                 axes[row, col].imshow(self.do.hmm_data.hmm_progressions[bid][col], cmap='gray')
                 axes[row, 0].set_ylabel(bid)
+        for col in range(5):
+            axes[len(self.bids) - 1, col].set_xlabel('{} seconds'.format((col - 2) * 10))
         fig.current_row += 10
 
     def save_fig(self, fig, method_name):
