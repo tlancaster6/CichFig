@@ -90,6 +90,7 @@ class FileManager:
         # Files created by CichFig (excluding pdfs of figures)
         self.localClusterPickle = self.localAnalysisDir + 'cluster_pickle.pkl'
         self.localDepthPickle = self.localAnalysisDir + 'depth_pickle.pkl'
+        self.localHmmPickle = self.localAnalysisDir + 'hmm_pickle.pkl'
 
     # Files created by manual labeler preparer
 

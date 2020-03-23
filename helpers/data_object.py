@@ -26,6 +26,11 @@ class DataObject:
     def load_data(self):
         if not os.path.exists(self.fm.localProjectDir):
             self.fm.downloadProjectData(dtype='Figures')
+
+        self.da = DA(self.fm) if self.da is None else self.da
+        self.ca = CA(self.fm) if self.ca is None else self.ca
+        self.lp = LP(self.fm.localLogfile) if self.lp is None else self.lp
+
         if os.path.exists(self.fm.localDepthPickle):
             self.unpickle_data('depth')
         else:
@@ -37,11 +42,13 @@ class DataObject:
         else:
             print('no pkl file found. running cluster data prep')
             self.prep_cluster_data()
-        self.da = DA(self.fm) if self.da is None else self.da
-        self.ca = CA(self.fm) if self.ca is None else self.ca
-        self.lp = LP(self.fm.localLogfile) if self.lp is None else self.lp
-        print('running hmm data prep')
-        self.prep_hmm_data()
+
+        if os.path.exists(self.fm.localHmmPickle):
+            self.unpickle_data('hmm')
+        else:
+            print('no pkl file found. running hmm data prep')
+            self.prep_hmm_data()
+
         self.update_multiproject_data()
 
     def prep_data(self):
@@ -107,7 +114,7 @@ class DataObject:
         for bid in self.ca.bids:
             event = self.ca.sliceDataframe(bid=bid, input_frame=df).sample(1)
             crop = np.s_[int(event.X) - 25: int(event.X) + 25, int(event.Y) - 25: int(event.Y) + 25]
-            frames = np.linspace((event.t - 20) * framerate,  (event.t + 2) * framerate, 5)
+            frames = np.linspace((event.t - 20) * framerate,  (event.t + 20) * framerate, 5)
             self.hmm_data.hmm_progressions.update({bid: [self.ha.retImage(t)[crop] for t in frames]})
 
 
@@ -238,6 +245,9 @@ class DataObject:
         elif dtype == 'depth':
             with open(self.fm.localDepthPickle, 'wb') as f:
                 pickle.dump(self.depth_data, f)
+        elif dtype == 'hmm':
+            with open(self.fm.localHmmPickle, 'wb') as f:
+                pickle.dump(self.hmm_data, f)
 
     def unpickle_data(self, dtype):
         print('unpickling {} data'.format(dtype))
@@ -247,6 +257,9 @@ class DataObject:
         elif dtype == 'depth':
             with open(self.fm.localDepthPickle, 'rb') as f:
                 self.depth_data = pickle.load(f)
+        elif dtype == 'hmm':
+            with open(self.fm.localHmmPickle, 'rb') as f:
+                self.hmm_data = pickle.load(f)
 
     def update_multiproject_data(self):
         df = pd.read_csv(self.fm.localMultiProjectData, index_col=0).to_dict('index')
