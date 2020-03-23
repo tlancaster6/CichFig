@@ -293,12 +293,12 @@ class Plotter:
     def hmm_progressions(self, fig=None):
         # show how the hmm changes before, during, and after a cluster event
         axes = fig.new_subplot(row=fig.current_row, col=0, row_span=10, col_span=self.n_days, despine=True, subspec=(10, 5))
-        for row in range(10):
+        for row in range(20):
             for col in range(5):
                 axes[row, col].imshow(self.do.hmm_data.hmm_progressions[row][col], cmap='gray')
         for col in range(5):
             axes[len(self.bids) - 1, col].set_xlabel('{} seconds'.format((col - 2) * 10))
-        fig.current_row += 10
+        fig.current_row += 20
 
     def save_fig(self, fig, method_name):
         if fig.save_flag:

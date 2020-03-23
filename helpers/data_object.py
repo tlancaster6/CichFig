@@ -103,19 +103,26 @@ class DataObject:
 
         # prep data for the hmm progressions plot
         self.hmm_data.hmm_progressions = []
+        # find a day with a wide variety of cluster types (preferably all 10 types)
         best_day = self.ca.clusterData.groupby('videoID')['Model18_All_pred'].unique().apply(len).argmax()
+        # download the hmm.npy and hmm.txt files associated with best_day
         self.fm.downloadData(self.fm.localTroubleshootingDir + '{:04d}'.format(best_day + 1) + '_vid.hmm.npy')
         self.fm.downloadData(self.fm.localTroubleshootingDir + '{:04d}'.format(best_day + 1) + '_vid.hmm.txt')
+        # generate an hmm analyzer object for best_day
         self.ha = HA(self.fm.returnVideoObject(int(best_day)).localHMMFile)
+        # slice the cluster data to only include clusters from best_day
         t0 = self.lp.movies[best_day].startTime.replace(hour=8, minute=0, second=0, microsecond=0)
         t1 = t0.replace(hour=18)
         df = self.ca.sliceDataframe(t0=t0, t1=t1, columns=['X', 'Y', 't', 'Model18_All_pred', 'N'])
-        df = df[df.N > 1500].sample(10)
+        # further filter the cluster data to only include clusters with N > 1500, then pick 20 clusters at random
+        df = df[df.N > 1500].sample(20)
+        # for each of the 10 chosen clusters, get the associated hmm image and crop it to 50x50
         framerate = self.lp.movies[best_day].framerate
         for index, event in df.iterrows():
             crop = np.s_[int(event.X) - 25: int(event.X) + 25, int(event.Y) - 25: int(event.Y) + 25]
             frames = np.linspace((event.t - 20) * framerate,  (event.t + 20) * framerate, 5)
             self.hmm_data.hmm_progressions.append([self.ha.retImage(t)[crop] for t in frames])
+        # pickle the hmm object
         self.pickle_data(dtype='hmm')
 
     def prep_depth_data(self):
